@@ -1,3 +1,4 @@
+from turtle import left, right
 import numpy as np # use numpy arrays
 import statistics as stat
 from anytree import Node, RenderTree, NodeMixin
@@ -45,20 +46,22 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
 
     def get_name(self):
         return self.name
+    
+
     # define binary split mechanics (for numerical variables)
-    def bin_split(self, feat, feat_nominal, var_name, thre):
+    def bin_split(self, feat, feat_nominal, var_name, soglia):
         #_self_ is the node object, feat and feature_names (these could be better implemented via a *dict*)
-        # var_name the string name and thre the threshold
+        # var_name the string name and soglia the sogliashold
         if var_name in feat:         #is_numeric(var) :      # split for numerical variables
             var = features[var_name]    # obtains the var column by identifiying the feature name 
-            self.split = var_name + ">" + str(thre) # compose the split string (just for numerical features)
+            self.split = var_name + ">" + str(soglia) # compose the split string (just for numerical features)
             parent = self.name
-            select = var[(self.indexes)] > thre              # split cases belonging to the parent node
+            select = var[(self.indexes)] > soglia              # split cases belonging to the parent node
         elif  var_name in feat_nominal:         #is_numeric(var) :      # split for nominal variables
             var = feat_nominal[var_name]    # obtains the var column by identifiying the nominal feature name 
-            self.split = var_name + " in " + str(thre) # compose the split string (just for numerical features)
+            self.split = var_name + " in " + str(soglia) # compose the split string (just for numerical features)
             parent = self.name
-            select = np.array([i in thre for i in var[(self.indexes)]]) # split cases belonging to the parent node
+            select = np.array([i in soglia for i in var[(self.indexes)]]) # split cases belonging to the parent node
         else :
             print("Var name is not among the supplied features!")
             return
@@ -142,7 +145,7 @@ print("Print a tree identified by its root", "\n")
 # apply the stump (dummy) split 
 #stump = my_tree.bin_split(features, n_features, 'x1', 5) # the actual splitting criterion will depend on
 # an efficient search function that should sweep on leaves and for each feature find the optimal cutting point
-# so as to label each candidate node by the var, threshold and impurity reduction,
+# so as to label each candidate node by the var, sogliashold and impurity reduction,
 # and eventually choose the best among candidate splits in terms of impurity reduction.
 
 #stump[0].name
@@ -276,7 +279,7 @@ n_features = dict(n_features, **n_features2)
 
 import itertools
 from statistics import mode
-
+'''
 print(features,'features',type(features))
 print()
 print(features_names,'features_names')
@@ -285,6 +288,7 @@ print(n_features,'n_features')
 print()
 print(n_features_names,'n_features_names')
 print()
+'''
 ########################### y categorical #######################################
 High=[]
 for i in features['Sales']:
@@ -342,6 +346,7 @@ def node_search_split(node, impurity, features, features_names):
     if len(node.indexes) >= grow_rules['min_cases_parent']:
         
         for var in n_features_names:
+            #print('categoric')
             #for i in range(len(n_features[str(var)])):
             distinct_values=np.array([])
             distinct_values=np.append(distinct_values,np.unique(n_features[str(var)]))
@@ -358,12 +363,31 @@ def node_search_split(node, impurity, features, features_names):
                     #print(type(i))
                     #print('i:',i)    
                     stump = node.bin_split(features, n_features, str(var),i)
-                    impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
-                    impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
-                    between_variance.append(sum(impurities_1[t:]))
-                    splits.append(i)
-                    variables.append(str(var))
-                    t+=2
+                    if y[stump[0].indexes].size <= 1:
+                        #return None
+                        print("##############sono qui nodo 0#######")
+                        impurities_1.append(0)
+                        impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
+                        between_variance.append(sum(impurities_1[t:]))
+                        splits.append(i)
+                        variables.append(str(var))
+                        t+=2
+                    elif y[stump[1].indexes].size <= 1:
+                        #return None
+                        print("##############sono qui nodo1#######")
+                        impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
+                        impurities_1.append(0)
+                        between_variance.append(sum(impurities_1[t:]))
+                        splits.append(i)
+                        variables.append(str(var))
+                        t+=2
+                    elif y[stump[0].indexes].size > 1 and y[stump[1].indexes].size > 1:
+                        impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
+                        impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
+                        between_variance.append(sum(impurities_1[t:]))
+                        splits.append(i)
+                        variables.append(str(var))
+                        t+=2
             combinazioni=[]
             distinct_values=np.array([])
             distinct_values=list(np.append(distinct_values,np.unique(n_features[str(var)])))
@@ -374,14 +398,17 @@ def node_search_split(node, impurity, features, features_names):
                 #print('qua',distinct_values)
                 #print('qua2',distinct_values[i],type(distinct_values[i]))
                 stump = node.bin_split(features, n_features, str(var),distinct_values[i])
+
                 if y[stump[0].indexes].size <= 1:
-                        impurities_1.append(0)
-                        impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
-                        between_variance.append(sum(impurities_1[t:]))
-                        splits.append(tuple(distinct_values[i]))
-                        variables.append(str(var))
-                        t+=2
+                    #return None
+                    impurities_1.append(0)
+                    impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
+                    between_variance.append(sum(impurities_1[t:]))
+                    splits.append(distinct_values[i])
+                    variables.append(str(var))
+                    t+=2
                 elif y[stump[1].indexes].size <= 1:
+                    #return None
                     impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
                     impurities_1.append(0)
                     between_variance.append(sum(impurities_1[t:]))
@@ -398,7 +425,9 @@ def node_search_split(node, impurity, features, features_names):
             
                         
         for var in features_names:
+            #print('numeric')
             for i in range(len(features[str(var)])):
+
                     stump = node.bin_split(features, n_features, str(var),features[str(var)][i])
                     if y[stump[0].indexes].size <= 1:
                         impurities_1.append(0)
@@ -408,12 +437,12 @@ def node_search_split(node, impurity, features, features_names):
                         variables.append(str(var))
                         t+=2
                     elif y[stump[1].indexes].size <= 1:
-                         impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
-                         impurities_1.append(0)
-                         between_variance.append(sum(impurities_1[t:]))
-                         splits.append(features[str(var)][i])
-                         variables.append(str(var))
-                         t+=2
+                        impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
+                        impurities_1.append(0)
+                        between_variance.append(sum(impurities_1[t:]))
+                        splits.append(features[str(var)][i])
+                        variables.append(str(var))
+                        t+=2
                     elif y[stump[0].indexes].size > 1 and y[stump[1].indexes].size > 1:
                          impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
                          impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
@@ -421,12 +450,15 @@ def node_search_split(node, impurity, features, features_names):
                          splits.append(features[str(var)][i])
                          variables.append(str(var))
                          t+=2
+        
+
                     
         #print('splits',len(splits))
         #print('impurities_1',len(impurities_1))
         #print('between_variance',len(between_variance))
         #print('variables',len(variables))
-        return variables[between_variance.index(max(between_variance))],splits[between_variance.index(max(between_variance))],max(between_variance)
+        return variables[between_variance.index(max(between_variance))],splits[between_variance.index(max(between_variance))],between_variance[between_variance.index(max(between_variance))]
+
     
                
         #return min(medie)
@@ -444,10 +476,10 @@ def node_search_split(node, impurity, features, features_names):
         
 #node_search_split(my_tree,impurity,features,features_names)
 '''
-first_value,thre=node_search_split(my_tree,impurity,features,features_names)
-print((first_value,thre))
+first_value,soglia=node_search_split(my_tree,impurity,features,features_names)
+print((first_value,soglia))
 
-splitsx,splitdx = my_tree.bin_split(features, n_features, str(first_value),thre)
+splitsx,splitdx = my_tree.bin_split(features, n_features, str(first_value),soglia)
 
 r,t=node_search_split(splitsx,impurity,features,features_names)
 print((r,t))
@@ -458,10 +490,10 @@ print((z,w))
 
 splitsx2,splitdx2 =splitdx.bin_split(features, n_features, str(z),w)
 
-first_valuesx2,thresx2=node_search_split(splitsx2,impurity,features,features_names)
-print(first_valuesx2,thresx2)
+first_valuesx2,sogliasx2=node_search_split(splitsx2,impurity,features,features_names)
+print(first_valuesx2,sogliasx2)
 
-splitsx3,splitdx3 =splitsx2.bin_split(features, n_features, str(first_valuesx2),thresx2)
+splitsx3,splitdx3 =splitsx2.bin_split(features, n_features, str(first_valuesx2),sogliasx2)
 print()
 
 d,g=node_search_split(splitsx3,impurity,features,features_names)
@@ -469,19 +501,19 @@ print(d,g)
 
 
 
-first_valuedx2,thredx2=node_search_split(splitdx2,impurity,features,features_names)
-print(first_value2,thre2)
+first_valuedx2,sogliadx2=node_search_split(splitdx2,impurity,features,features_names)
+print(first_value2,soglia2)
 
 
-splitsx3,splitdx3 =splitdx2.bin_split(features, n_features, str(first_valuedx2),thredx2)
+splitsx3,splitdx3 =splitdx2.bin_split(features, n_features, str(first_valuedx2),sogliadx2)
 print()
 
 e,s=node_search_split(splitsx3,impurity,features,features_names)
 print(e,s)
 '''
 
-def stop_rule(max_between_variance_father,max_between_variance_child):
-    if max_between_variance_child > max_between_variance_father:
+def stop_rule(impurity_father,impurity_child):
+    if impurity_child > impurity_father:
         return True
     else:
         return False
@@ -490,62 +522,36 @@ def stop_rule(max_between_variance_father,max_between_variance_child):
 def growing_tree(node:Node,impurity,features,features_names):
 
     number_of_split = 0
-    tree_value_thre = []
-    tree = []
+    value_soglia_variance = []
     '''
     Salvare tutti i nodi dove è stato possibile effettuare lo split
     Inoltre tenere in considerazione sempre il root node e tutti gli split effettuati con successo perchè perchè nel momento in cui l'ultimo split avviene 
     quando si risale l'albero appena si arriva al root_node ci si ferma.
     '''
-    condition = "ok" #la condizione va su ko solo se ritorno al root node partendo da destra
-    value,thre,max = node_search_split(node,impurity,features,features_names)
-    print(max)
-    tree_value_thre.append((value,thre,"split"))
-    print(tree_value_thre)
-    left_node,right_node = node.bin_split(features, n_features, str(value),thre)
-    while condition != "ko":
+    #la condizione va su ko solo se ritorno al root node partendo da destra
+    #father_variance = 1000000000000
+    count_node = 0
+    while  1:
+        #if node_search_split(node,impurity,features,features_names) == None:
+        #    break
+        try:
+            value,soglia,varian = node_search_split(node,impurity,features,features_names)
+        except:
+            break
+        value_soglia_variance.append([value,soglia,varian])
+        print(value_soglia_variance)
+        left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
+        #print("varianza between nodo  ",(mean(y[left_node.indexes])**2)*len(y[left_node.indexes])+(mean(y[right_node.indexes])**2)*len(y[right_node.indexes]))
+        #print(stat.variance(y[left_node.indexes]))
+        deviance = sum((y[node.indexes]-mean(y[node.indexes]))**2)
+        print(deviance,varian)
+        if stop_rule(varian,deviance):
+            break
+        node = right_node
         
-        value,thre,max_variance = node_search_split(left_node,impurity,features,features_names)
-        if stop_rule(max,max_variance) :
-            condition = "ko"  
-        print(max_variance)
-        tree_value_thre.append((value,thre,"split"))
-        print(tree_value_thre)
-        left_node,right_node = node.bin_split(features, n_features, str(value),thre)
-        tree.append("left")
-        number_of_split += 1
-        print( number_of_split)
-        print(tree)
-        max = max_variance
-        
+        #father_variance = varian
         
 
 
 
 growing_tree(my_tree,impurity,features,features_names)
-        
-
-
-
-
-
-#split_node.bin_split(features, n_features, 'x2', 6)
-
-
-
-#split_node_dx = my_tree.leaves[1]
-#z,w=node_search_split(split_node_dx,impurity,features,z)
-
-def GrowingTree():
-    x,y=node_search_split(my_tree,impurity,features,features_names)
-    my_tree.bin_split(features, n_features, str(x),y)
-    split_node_sx = my_tree.leaves[0] # imagine that the 1st splitting node is the second leaf explored
-    z,w=node_search_split(split_node_sx,impurity,features,features_names)
-    split_node_dx = my_tree.leaves[1]
-    z,w=node_search_split(split_node_dx,impurity,features,fetures_names)
-    
-    
-
-    
-#split_node = my_tree.leaves[1] # imagine that the 1st splitting node is the second leaf explored
-#split_node.bin_split(features, n_features, 'x2', 6)   
