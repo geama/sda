@@ -519,7 +519,10 @@ def stop_rule(impurity_father,impurity_child):
         return False
 
 
-def growing_tree(node:Node,impurity,features,features_names):
+class completetree:
+    bigtree =  []
+
+def growing_tree(node:Node,impurity,features,features_names,rout):
 
     number_of_split = 0
     value_soglia_variance = []
@@ -531,25 +534,28 @@ def growing_tree(node:Node,impurity,features,features_names):
     #la condizione va su ko solo se ritorno al root node partendo da destra
     #father_variance = 1000000000000
     count_node = 0
-    while  1:
-        #if node_search_split(node,impurity,features,features_names) == None:
-        #    break
-        try:
-            value,soglia,varian = node_search_split(node,impurity,features,features_names)
-        except:
-            break
-        value_soglia_variance.append([value,soglia,varian])
-        print(value_soglia_variance)
-        left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
-        #print("varianza between nodo  ",(mean(y[left_node.indexes])**2)*len(y[left_node.indexes])+(mean(y[right_node.indexes])**2)*len(y[right_node.indexes]))
-        #print(stat.variance(y[left_node.indexes]))
-        deviance = sum((y[node.indexes]-mean(y[node.indexes]))**2)
-        print(deviance,varian)
-        if stop_rule(varian,deviance):
-            break
-        node = right_node
+    tree= [] 
+
+    try:
         
-        #father_variance = varian
+        value,soglia,varian = node_search_split(node,impurity,features,features_names)                
+
+    except TypeError:
+        return None
+    
+    if varian <500000: #My personal choise :Per non avere un albero enorme mettere questo limite mi sembra appropriato
+        value_soglia_variance.append(None)
+        return None
+
+
+    value_soglia_variance.append([value,soglia,varian])
+    print(value_soglia_variance,rout)
+    left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
+    tree.append((node,left_node,right_node))
+    completetree.bigtree.append(tree)
+    print(tree)
+    
+    return growing_tree(left_node,impurity,features,features_names,"left"),growing_tree(right_node,impurity,features,features_names,"right")
         
 
 
