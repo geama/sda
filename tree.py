@@ -1,4 +1,5 @@
 from turtle import left, right
+from typing import final
 import numpy as np # use numpy arrays
 import statistics as stat
 from anytree import Node, RenderTree, NodeMixin
@@ -6,10 +7,9 @@ from pyparsing import condition_as_parse_action
 
 # define a set of suitable impurity functions (depending on the type of response)
 class Impurity:
-    def __init__(self,type:str):
-        self.type = type
-    
-    def get_impurity(self,array:list):
+    def __init__(self,name:str):
+        self.name = name
+    def get_impurity(self,array:list,type):
         if self.type == "MSE":
             return stat.variance(array)
         elif self.type=='GINI':
@@ -43,6 +43,7 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
         self.parent = parent               # parent node (if None => root node)
         if children:
              self.children = children
+    
 
     def get_name(self):
         return self.name
@@ -85,90 +86,8 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
 impurity  = Impurity('MSE')
 
 
-#def impurity_fn (type):
-#    if type == 'MSE':
-#        return stat.variance   # return the variance
-#    else:
-#        print('Implementing other impurity functions is Your job! ;)')
-
-# dummy data for testing
-# from numpy.random use default_rng 
-#x1 = np.arange(1,11)
-#x2 = np.arange(20,1,-2) - np.random.default_rng(241221).random(10)
-#y = np.random.default_rng(251221).random(10)+ 3*x1 - x2
-
-
-# adding a nominal var
-#x3 = np.array(['a', 'a', 'c', 'b', 'c', 'b', 'a', 'b', 'c', 'b'])
-#x4 = np.array(['red', 'yellow', 'red', 'blue', 'cyan', 'blue', 'cyan', 'red', 'blue', 'yellow'],dtype=str)
-
-# data matrix (1st column is the response so features' indexes will coincide in R too)
-#features = np.empty((2,10))
-
-#response = y  # response variable (numeric)
-#features[0,] = x1 # actual features (x1, x2)
-#features[1,] = x2
-
-# »I need pandas to handle a string column!
-#n_features = np.empty((2,10),dtype=str)
-
-#n_features = []
-
-#n_features.append(x3)
-#n_features.append(x4)
-
-#n_features = np.array(n_features)
-
-#n_features[0,] = x3
-#n_features[1,] = x4 # WARNING: To fit in a char array modalities are labeled by the initial, MIND duplicates!
-
-#print(n_features[1])
-# names (to fill-in the split string as required)
-#features_names = ('x1','x2')     # once moved to pandas df the code should be refactored
-#n_features_names  = ('x3', 'x4')
-
-#features = dict(zip(features_names,features))
-
-#print(features)
-
-#n_features = dict(zip(n_features_names,n_features))
-
-# define a Numpy array for index
-#indici = np.arange(0, len(y))
-#impurity = impurity_fn('MSE') # chhose the simplest impurity functin (for regression tree)
-# start a tree structure by instantiating its root
-#my_tree = MyNodeClass('n1', indici, impurity, None) # no split is yet set, (Planting a tree! :)
-
 print("Print a tree identified by its root", "\n")
-#my_tree.print_tree()
-#print(features)
-# apply the stump (dummy) split 
-#stump = my_tree.bin_split(features, n_features, 'x1', 5) # the actual splitting criterion will depend on
-# an efficient search function that should sweep on leaves and for each feature find the optimal cutting point
-# so as to label each candidate node by the var, sogliashold and impurity reduction,
-# and eventually choose the best among candidate splits in terms of impurity reduction.
 
-#stump[0].name
-#stump[1].name
-
-# experiments
-#my_tree.print_tree()
-#stump[0].print_tree()
-#stump[1].print_tree()
-
-# simulate another split
-#split_node = my_tree.leaves[1] # imagine that the 1st splitting node is the second leaf explored
-#split_node.bin_split(features, n_features, 'x2', 6)  
-#print("SPLITTING @:", split_node.name, "by x2 > 6")
-#my_tree.print_tree()
-
-# simulate a further split at an higher level
-#split_node = my_tree.leaves[0] # imagine that 2nd the splitting node is the first leaf explored
-#print(n_features)
-#split_node.bin_split(features, n_features, 'x3', ('a','b'))
-#print("SPLITTING @:", split_node.name, "by x3 in ('a','b') :")
-#print("\n")
-#my_tree.print_tree()
 
 # function for predicting an unseen value (recursive implementation)
 #from __future__ import annotations
@@ -365,7 +284,7 @@ def node_search_split(node, impurity, features, features_names):
                     stump = node.bin_split(features, n_features, str(var),i)
                     if y[stump[0].indexes].size <= 1:
                         #return None
-                        print("##############sono qui nodo 0#######")
+                        #print("##############sono qui nodo 0#######")
                         impurities_1.append(0)
                         impurities_1.append((mean(y[stump[1].indexes])**2)*len(y[stump[1].indexes]))
                         between_variance.append(sum(impurities_1[t:]))
@@ -374,7 +293,7 @@ def node_search_split(node, impurity, features, features_names):
                         t+=2
                     elif y[stump[1].indexes].size <= 1:
                         #return None
-                        print("##############sono qui nodo1#######")
+                        #print("##############sono qui nodo1#######")
                         impurities_1.append((mean(y[stump[0].indexes])**2)*len(y[stump[0].indexes]))
                         impurities_1.append(0)
                         between_variance.append(sum(impurities_1[t:]))
@@ -519,6 +438,7 @@ def stop_rule(impurity_father,impurity_child):
         return False
 
 
+
 class completetree:
     bigtree =  []
 
@@ -556,8 +476,98 @@ def growing_tree(node:Node,impurity,features,features_names,rout):
     print(tree)
     
     return growing_tree(left_node,impurity,features,features_names,"left"),growing_tree(right_node,impurity,features,features_names,"right")
+
+
+    
+        
+        #father_variance = varian
         
 
 
 
-growing_tree(my_tree,impurity,features,features_names)
+growing_tree(my_tree,impurity,features,features_names,"start")
+
+'''
+Per ogni nodo costruisci il mini albero:
+    papà
+
+figlio      figlio 
+destro      sinistro
+
+
+Se un figlio non c'è mettici None
+Struttura
+con [[Padre,figliodestro,figliosinisto]["""""""]["""""""""]]
+'''
+
+
+#root
+'''
+father_variance = 100000000
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
+#right
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = left_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = left_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
+'''
+
+
+#split_node.bin_split(features, n_features, 'x2', 6)
+
+
+
+#split_node_dx = my_tree.leaves[1]
+#z,w=node_search_split(split_node_dx,impurity,features,z)
+
+def GrowingTree():
+    x,y=node_search_split(my_tree,impurity,features,features_names)
+    my_tree.bin_split(features, n_features, str(x),y)
+    split_node_sx = my_tree.leaves[0] # imagine that the 1st splitting node is the second leaf explored
+    z,w=node_search_split(split_node_sx,impurity,features,features_names)
+    split_node_dx = my_tree.leaves[1]
+    z,w=node_search_split(split_node_dx,impurity,features,fetures_names)
+    
+    
+
+    
+#split_node = my_tree.leaves[1] # imagine that the 1st splitting node is the second leaf explored
+#split_node.bin_split(features, n_features, 'x2', 6)   
