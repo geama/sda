@@ -1,5 +1,4 @@
-from turtle import left, right
-from typing import final
+
 import numpy as np # use numpy arrays
 import statistics as stat
 from anytree import Node, RenderTree, NodeMixin
