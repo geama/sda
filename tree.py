@@ -440,8 +440,11 @@ def stop_rule(impurity_father,impurity_child):
 
 class completetree:
     bigtree =  []
+    devian_y = len(y)*variance(y)
+    father = []
+    node_prop_list = []
 
-def growing_tree(node:Node,impurity,features,features_names,rout):
+def growing_tree(node:Node,impurity,features,features_names,rout,prop=0.7):
 
     number_of_split = 0
     value_soglia_variance = []
@@ -462,17 +465,48 @@ def growing_tree(node:Node,impurity,features,features_names,rout):
     except TypeError:
         return None
     
-    if varian <500000: #My personal choise :Per non avere un albero enorme mettere questo limite mi sembra appropriato
-        value_soglia_variance.append(None)
-        return None
-
-
+    if rout == 'start':
+        completetree.father.append(node)
+        ex_deviance = varian - len(y)*mean(y)**2
+ 
+    
     value_soglia_variance.append([value,soglia,varian])
-    print(value_soglia_variance,rout)
+    
     left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
+    
+
     tree.append((node,left_node,right_node))
-    completetree.bigtree.append(tree)
+    completetree.bigtree.append(node)
+    completetree.father.append(node)
+    completetree.bigtree.append(left_node)
+    completetree.bigtree.append(right_node)
+    print(value_soglia_variance,rout)
     print(tree)
+    
+    if rout == 'start':
+        completetree.father.append(node)
+        ex_deviance = varian - len(y)*mean(y)**2
+    else:
+        ex_deviance_list= []
+        for inode in completetree.bigtree:
+            if inode not in completetree.father:
+                ex_deviance_list.append(len(y[inode.indexes])*(mean(y[inode.indexes])-mean(y))**2)
+                #ex_deviance_list.append(0)
+        ex_deviance = sum(ex_deviance_list)
+
+    node_propotion = ex_deviance/ completetree.devian_y
+    completetree.node_prop_list.append(node_propotion)
+    print(node_propotion)
+    if len(completetree.node_prop_list)>1:
+        delta = completetree.node_prop_list[-1] - completetree.node_prop_list[-2]
+        if delta < 0.03:#all utente 
+            completetree.bigtree.pop()
+            #completetree.node_prop_list.pop()
+            return None
+    if node_propotion >= prop: #My personal choise :Per non avere un albero enorme mettere questo limite mi sembra appropriato
+        value_soglia_variance.append(None)
+        completetree.bigtree.pop()
+        return None
     
     return growing_tree(left_node,impurity,features,features_names,"left"),growing_tree(right_node,impurity,features,features_names,"right")
 
@@ -498,7 +532,3 @@ Se un figlio non c'è mettici None
 Struttura
 con [[Padre,figliodestro,figliosinisto]["""""""]["""""""""]]
 '''
-
-
-
-
