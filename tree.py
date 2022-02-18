@@ -1,4 +1,5 @@
-
+from turtle import left, right
+from typing import final
 import numpy as np # use numpy arrays
 import statistics as stat
 from anytree import Node, RenderTree, NodeMixin
@@ -109,10 +110,6 @@ def pred_x(node, x) -> MyNodeClass :
 
 new = (3, 23)
 new_n = ("a", "y")
-#d = dict(zip(features_names, new))
-#dn = dict(zip(n_features_names, new_n))
-#d.update(dn)
-#pred_x(my_tree, d)
 
 
 # First one should set the contraints for the tree growing:
@@ -124,14 +121,7 @@ grow_rules = {'min_cases_parent': 10,
 
 from statistics import mean
 from statistics import variance
-#print(len(x1),len(x2))
-#print(features_names)
-#print(features)
-#print(len(features['x1']))
-#print(variance(y),y)
 
-#categorical variables are stored here: n_features. names of the variables: n_features_names
-#impurit = Impurity("MSE")
 import pandas as pd
 
 #d = dict(features, **n_features)  #merges the two dicts
@@ -141,16 +131,6 @@ import pandas as pd
 import csv
 
 
-#features=pd.array([])
-#features=df.iloc[:,[0,1,2,3,4,5,6,7]]
-
-#features_names=('x1','x2','x3','x4')
-#features=df.iloc[:,[0,1]]
-#features_names=list(df.columns)
-#features_names=features_names[:2]
-#features=df.iloc[:,[0,1]]
-#features=df
-#n_features=dict(df.iloc[:,[2,3]])
 
 #####################################loading the carseats data#########################
 
@@ -370,65 +350,9 @@ def node_search_split(node, impurity, features, features_names):
                          t+=2
         
 
-                    
-        #print('splits',len(splits))
-        #print('impurities_1',len(impurities_1))
-        #print('between_variance',len(between_variance))
-        #print('variables',len(variables))
         return variables[between_variance.index(max(between_variance))],splits[between_variance.index(max(between_variance))],between_variance[between_variance.index(max(between_variance))]
 
-    
-               
-        #return min(medie)
-                #print(y[stump[0].indexes])
-                #print(features[str(var)][i])
-            
-        
-            #impurities_1=[]
-                #print(my_tree.impurity)
-                #impurities.append()
-                #stump[0].print_tree()
-                #stump[1].print_tree()
-                #impurities.append(impurity(stump))
-    
-        
-#node_search_split(my_tree,impurity,features,features_names)
-'''
-first_value,soglia=node_search_split(my_tree,impurity,features,features_names)
-print((first_value,soglia))
 
-splitsx,splitdx = my_tree.bin_split(features, n_features, str(first_value),soglia)
-
-r,t=node_search_split(splitsx,impurity,features,features_names)
-print((r,t))
-
-z,w=node_search_split(splitdx,impurity,features,features_names)
-print((z,w)) 
-
-
-splitsx2,splitdx2 =splitdx.bin_split(features, n_features, str(z),w)
-
-first_valuesx2,sogliasx2=node_search_split(splitsx2,impurity,features,features_names)
-print(first_valuesx2,sogliasx2)
-
-splitsx3,splitdx3 =splitsx2.bin_split(features, n_features, str(first_valuesx2),sogliasx2)
-print()
-
-d,g=node_search_split(splitsx3,impurity,features,features_names)
-print(d,g)
-
-
-
-first_valuedx2,sogliadx2=node_search_split(splitdx2,impurity,features,features_names)
-print(first_value2,soglia2)
-
-
-splitsx3,splitdx3 =splitdx2.bin_split(features, n_features, str(first_valuedx2),sogliadx2)
-print()
-
-e,s=node_search_split(splitsx3,impurity,features,features_names)
-print(e,s)
-'''
 
 def stop_rule(impurity_father,impurity_child):
     if impurity_child > impurity_father:
@@ -436,26 +360,26 @@ def stop_rule(impurity_father,impurity_child):
     else:
         return False
 
-
-
 class completetree:
     bigtree =  []
     devian_y = len(y)*variance(y)
+    nsplit = 0
     father = []
+    root = []
     node_prop_list = []
+    count_left = 0
+    count_right  = 0
 
-def growing_tree(node:Node,impurity,features,features_names,rout,prop=0.7):
 
-    number_of_split = 0
+def growing_tree(node:Node,impurity,features,features_names,rout='start',prop=0.8):
+
+    if rout =='left':
+        completetree.count_left += 1
+    elif rout == 'right':
+        completetree.count_right +=1
+    
     value_soglia_variance = []
-    '''
-    Salvare tutti i nodi dove è stato possibile effettuare lo split
-    Inoltre tenere in considerazione sempre il root node e tutti gli split effettuati con successo perchè perchè nel momento in cui l'ultimo split avviene 
-    quando si risale l'albero appena si arriva al root_node ci si ferma.
-    '''
-    #la condizione va su ko solo se ritorno al root node partendo da destra
-    #father_variance = 1000000000000
-    count_node = 0
+
     tree= [] 
 
     try:
@@ -471,18 +395,20 @@ def growing_tree(node:Node,impurity,features,features_names,rout,prop=0.7):
  
     
     value_soglia_variance.append([value,soglia,varian])
-    
+    completetree.root.append((value_soglia_variance,rout))
+
     left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
     
 
     tree.append((node,left_node,right_node))
     completetree.bigtree.append(node)
     completetree.father.append(node)
+    completetree.bigtree.append(node)
     completetree.bigtree.append(left_node)
     completetree.bigtree.append(right_node)
     print(value_soglia_variance,rout)
     print(tree)
-    
+###### Calcolo della deviance nel nodo     
     if rout == 'start':
         completetree.father.append(node)
         ex_deviance = varian - len(y)*mean(y)**2
@@ -490,6 +416,7 @@ def growing_tree(node:Node,impurity,features,features_names,rout,prop=0.7):
         ex_deviance_list= []
         for inode in completetree.bigtree:
             if inode not in completetree.father:
+                print("inode figlio ", inode)
                 ex_deviance_list.append(len(y[inode.indexes])*(mean(y[inode.indexes])-mean(y))**2)
                 #ex_deviance_list.append(0)
         ex_deviance = sum(ex_deviance_list)
@@ -499,26 +426,26 @@ def growing_tree(node:Node,impurity,features,features_names,rout,prop=0.7):
     print(node_propotion)
     if len(completetree.node_prop_list)>1:
         delta = completetree.node_prop_list[-1] - completetree.node_prop_list[-2]
-        if delta < 0.03:#all utente 
-            completetree.bigtree.pop()
+        print("delta ",delta)
+        if delta < 0.015:#all utente  :Controllo delle variazione nei nodi figli
+            #completetree.bigtree.pop()
             #completetree.node_prop_list.pop()
+            #completetree.root.pop()
             return None
     if node_propotion >= prop: #My personal choise :Per non avere un albero enorme mettere questo limite mi sembra appropriato
         value_soglia_variance.append(None)
-        completetree.bigtree.pop()
+        #completetree.bigtree.pop()
+        #completetree.root.pop()
         return None
-    
+
+
+    completetree.nsplit += 1
     return growing_tree(left_node,impurity,features,features_names,"left"),growing_tree(right_node,impurity,features,features_names,"right")
 
+growing_tree(my_tree,impurity,features,features_names)
 
-    
-        
-        #father_variance = varian
-        
-
-
-
-growing_tree(my_tree,impurity,features,features_names,"start")
+print(completetree.nsplit)
+print(completetree.root)
 
 '''
 Per ogni nodo costruisci il mini albero:
@@ -531,4 +458,54 @@ destro      sinistro
 Se un figlio non c'è mettici None
 Struttura
 con [[Padre,figliodestro,figliosinisto]["""""""]["""""""""]]
+'''
+
+
+#root
+'''
+father_variance = 100000000
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
+#right
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = left_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = left_node
+father_variance = variance
+
+value,soglia,variance = node_search_split(my_tree,impurity,features,features_names)
+print(value,soglia,variance)
+left_node,right_node = my_tree.bin_split(features, n_features, str(value),soglia)
+print(father_variance,variance)
+if stop_rule(father_variance,variance):
+    print("STOP")
+my_tree = right_node
+father_variance = variance
 '''
