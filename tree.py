@@ -1,9 +1,6 @@
-from turtle import left, right
-from typing import final
 import numpy as np # use numpy arrays
 import statistics as stat
 from anytree import Node, RenderTree, NodeMixin
-from pyparsing import condition_as_parse_action
 
 # define a set of suitable impurity functions (depending on the type of response)
 class Impurity:
@@ -353,13 +350,13 @@ def node_search_split(node, impurity, features, features_names):
         return variables[between_variance.index(max(between_variance))],splits[between_variance.index(max(between_variance))],between_variance[between_variance.index(max(between_variance))]
 
 
-
+'''
 def stop_rule(impurity_father,impurity_child):
     if impurity_child > impurity_father:
         return True
     else:
         return False
-
+'''
 class completetree:
     bigtree =  []
     devian_y = len(y)*variance(y)
@@ -389,10 +386,6 @@ def growing_tree(node:Node,impurity,features,features_names,rout='start',prop=0.
     except TypeError:
         return None
     
-    if rout == 'start':
-        completetree.father.append(node)
-        ex_deviance = varian - len(y)*mean(y)**2
- 
     
     value_soglia_variance.append([value,soglia,varian])
     completetree.root.append((value_soglia_variance,rout))
@@ -402,7 +395,8 @@ def growing_tree(node:Node,impurity,features,features_names,rout='start',prop=0.
 
     tree.append((node,left_node,right_node))
     completetree.bigtree.append(node)
-    completetree.father.append(node)
+    if rout != 'start':
+        completetree.father.append(node)
     completetree.bigtree.append(node)
     completetree.bigtree.append(left_node)
     completetree.bigtree.append(right_node)
