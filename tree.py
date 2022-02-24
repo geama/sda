@@ -31,19 +31,23 @@ class MyBaseClass(object):  # Just a basic base class
 
 # define node class by making it a generic binary tree node class
 class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
-    def __init__(self, name, indexes, impurity:Impurity, split=None, parent=None, children=None):
+    def __init__(self, name, indexes, impurity:Impurity, split=None, parent=None, children=None,node_level= 0):
         super(MyNodeClass, self).__init__()
         self.name = name                   # id n_node number
         self.indexes = indexes             # array of indexes of cases
         self.impurity = impurity          # vue in the node of the chosen impurity function
         self.split = split                 # string of the split (if any in the node, None => leaf)
         self.parent = parent               # parent node (if None => root node)
+        self.node_level = node_level
         if children:
              self.children = children
     
 
     def get_name(self):
         return self.name
+    
+    def get_level(self):
+        return self.node_level
     
 
     # define binary split mechanics (for numerical variables)
@@ -68,7 +72,7 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
         right_i = self.indexes[select]                      # to the right child criterion TRUE
         child_l = "n" + str(int(parent.replace("n",""))*2)
         child_r = "n" + str(int(parent.replace("n",""))*2 + 1)
-        return MyNodeClass(child_l, left_i, None, parent = self), MyNodeClass(child_r, right_i, None, parent = self)   # instantiate left & right children
+        return MyNodeClass(child_l, left_i, None, parent = self,node_level=self.node_level+1), MyNodeClass(child_r, right_i, None, parent = self,node_level=self.node_level+1)   # instantiate left & right children
             
             
     # add a method to fast render the tree in ASCII
@@ -357,6 +361,7 @@ def stop_rule(impurity_father,impurity_child):
     else:
         return False
 '''
+'''
 class completetree:
     bigtree =  []
     devian_y = len(y)*variance(y)
@@ -427,7 +432,7 @@ def growing_tree(node:Node,impurity,features,features_names,rout='start',prop=0.
             #completetree.root.pop()
             return None
     if node_propotion >= prop: #My personal choise :Per non avere un albero enorme mettere questo limite mi sembra appropriato
-        value_soglia_variance.append(None)
+        #value_soglia_variance.append(None)
         #completetree.bigtree.pop()
         #completetree.root.pop()
         return None
@@ -442,11 +447,117 @@ print(completetree.nsplit)
 print(completetree.root)
 
 '''
+class completetree:
+    bigtree =  []
+    devian_y = len(y)*variance(y)
+    nsplit = 0
+    father = []
+    root = []
+    tree = []
+    node_prop_list = []
+
+
+def growing_tree(node:Node,impurity,features,features_names,rout='start',prop=0.55):
+    
+    value_soglia_variance = []
+
+    mini_tree= [] 
+
+    try:
+        
+        value,soglia,varian = node_search_split(node,impurity,features,features_names)                
+
+    except TypeError:
+        return None
+    
+    level = node.get_level()
+    value_soglia_variance.append([value,soglia,varian,level])
+    completetree.root.append((value_soglia_variance,rout))
+
+    left_node,right_node = node.bin_split(features, n_features, str(value),soglia)
+
+
+
+    mini_tree.append((node,left_node,right_node))
+    completetree.tree.append(mini_tree) 
+    completetree.bigtree.append(node)
+    if rout != 'start':
+        completetree.father.append(node)
+    completetree.bigtree.append(node)
+    completetree.bigtree.append(left_node)
+    completetree.bigtree.append(right_node)
+    print(value_soglia_variance,rout)
+
+###### Calcolo della deviance nel nodo  
+
+    if rout == 'start':
+        completetree.father.append(node)
+        ex_deviance = varian - len(y)*mean(y)**2
+    else:
+        ex_deviance_list= []
+        for inode in completetree.bigtree:
+            if inode not in completetree.father:
+                #print("inode figlio ", inode)
+                ex_deviance_list.append(len(y[inode.indexes])*(mean(y[inode.indexes])-mean(y))**2)
+                #ex_deviance_list.append(0)
+        ex_deviance = sum(ex_deviance_list)
+
+    node_propotion_total = ex_deviance/ completetree.devian_y   
+    father_deviance = len(y[node.indexes])*variance(y[node.indexes])
+    children_deviance = len(y[left_node.indexes])*variance(y[left_node.indexes]) + len(y[right_node.indexes])*variance(y[right_node.indexes])
+    print("node_propotion_total ",node_propotion_total)
+    node_propotion_partial = children_deviance/ father_deviance
+    completetree.node_prop_list.append(node_propotion_total)
+    print("Node propotion_partial ",node_propotion_partial)
+    
+    if len(completetree.node_prop_list)>1:
+        delta = completetree.node_prop_list[-1] - completetree.node_prop_list[-2]
+        print("delta ",delta)
+        if delta < 0.015 or node_propotion_partial > 0.81:#all utente  :Controllo delle variazione nei nodi figli
+            #completetree.tree.pop()
+            #completetree.root.pop()
+            return None
+
+    if node_propotion_total >= prop: 
+        #completetree.tree.pop()
+        #completetree.root.pop() 
+        return None
+
+
+    completetree.nsplit += 1
+    return growing_tree(left_node,impurity,features,features_names,"left"),growing_tree(right_node,impurity,features,features_names,"right")
+
+growing_tree(my_tree,impurity,features,features_names)
+
+print(completetree.tree)
+print(len(completetree.tree))
+
+only_node_list = []
+for node in completetree.bigtree:
+    if node not in only_node_list:
+        only_node_list.append(node)
+
+print("solo nodi ",only_node_list)
+print("lista soglie e valori ",completetree.root)
+
+leaf = [inode for inode in completetree.bigtree if inode not in completetree.father]
+print(leaf)
+
+void = []
+
+for i in completetree.tree:
+    pass
+
+
+
+
+
+'''
 Per ogni nodo costruisci il mini albero:
     papà
 
 figlio      figlio 
-destro      sinistro
+sinistro    destro
 
 
 Se un figlio non c'è mettici None
