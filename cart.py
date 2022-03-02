@@ -7,7 +7,7 @@ class Impurity:
         self.name = name
     def get_impurity(self,array:list,type):
         if self.type == "MSE":
-            return stat.variance(array)
+            return variance(array)
         elif self.type=='GINI':
             # (Warning: This is a concise implementation, but it is O(n**2)
             # in time and memory, where n = len(x).  *Don't* pass in huge
@@ -239,7 +239,7 @@ class CART:
 
 
 
-    def growing_tree(self,node:Node,rout='start',prop=0.55):
+    def growing_tree(self,node:Node,rout='start',prop=0.55,delta_check  = 0.1,node_proportion_partial_check = 0.9):
         
         value_soglia_variance = []
 
@@ -295,7 +295,7 @@ class CART:
         if len(self.node_prop_list)>1:
             delta = self.node_prop_list[-1] - self.node_prop_list[-2]
             print("delta ",delta)
-            if delta < 0.015 or node_propotion_partial > 0.81:#all utente  :Controllo delle variazione nei nodi figli
+            if delta < delta_check or node_propotion_partial > node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
                 #completetree.tree.pop()
                 #completetree.root.pop()
                 return None
