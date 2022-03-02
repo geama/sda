@@ -7,7 +7,7 @@ class Impurity:
         self.name = name
     def get_impurity(self,array:list,type):
         if self.type == "MSE":
-            return variance(array)
+            return stat.variance(array)
         elif self.type=='GINI':
             # (Warning: This is a concise implementation, but it is O(n**2)
             # in time and memory, where n = len(x).  *Don't* pass in huge
@@ -86,10 +86,9 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
 def impur(vector):
     return (mean(vector)**2)*len(vector)
 
-grow_rules = {'min_cases_parent': 10,
-              'min_cases_child': 5,
-              'min_imp_gain': 10^-5
-             }
+
+
+
 class CART:
     
     bigtree =  []
@@ -98,8 +97,10 @@ class CART:
     root = []
     tree = []
     node_prop_list = []
+    grow_rules = {}
+    
 
-    def __init__(self,y,features,features_names,n_features,n_features_names):
+    def __init__(self,y,features,features_names,n_features,n_features_names,min_cases_parent = 10,min_cases_child = 5,min_imp_gain=10**-5):
 
         self.y = y
         self.features = features
@@ -107,6 +108,7 @@ class CART:
         self.n_features = n_features
         self.n_features_names = n_features_names
         self.devian_y = len(self.y)*variance(self.y)
+        self.grow_rules.update(dict({'min_cases_parent':min_cases_parent,'min_cases_child':min_cases_child,'min_imp_gain':min_imp_gain}))
 
 
     def node_search_split(self,node:MyNodeClass, features, features_names):
@@ -121,7 +123,7 @@ class CART:
         
         node.set_features(self.features)
     
-        if len(node.indexes) >= grow_rules['min_cases_parent']:
+        if len(node.indexes) >= self.grow_rules['min_cases_parent']:
             
             for var in self.n_features_names:
                 #print('categoric')
@@ -159,7 +161,7 @@ class CART:
                             splits.append(i)
                             variables.append(str(var))
                             t+=2
-                        elif self.y[stump[0].indexes].size > 1 and self.y[stump[1].indexes].size > 1:
+                        elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                             impurities_1.append(impur(self.y[stump[0].indexes]))
                             impurities_1.append(impur(self.y[stump[1].indexes]))
                             between_variance.append(sum(impurities_1[t:]))
@@ -193,7 +195,7 @@ class CART:
                         splits.append(distinct_values[i])
                         variables.append(str(var))
                         t+=2
-                    elif self.y[stump[0].indexes].size > 1 and self.y[stump[1].indexes].size > 1:
+                    elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child']  and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                         impurities_1.append(impur(self.y[stump[0].indexes]))
                         impurities_1.append(impur(self.y[stump[1].indexes]))
                         between_variance.append(sum(impurities_1[t:]))
@@ -221,7 +223,7 @@ class CART:
                             splits.append(self.features[str(var)][i])
                             variables.append(str(var))
                             t+=2
-                        elif self.y[stump[0].indexes].size > 1 and self.y[stump[1].indexes].size > 1:
+                        elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                             impurities_1.append(impur(self.y[stump[0].indexes]))
                             impurities_1.append(impur(self.y[stump[1].indexes]))
                             between_variance.append(sum(impurities_1[t:]))
@@ -231,15 +233,11 @@ class CART:
             
 
                         
-            #print('splits',len(splits))
-            #print('impurities_1',len(impurities_1))
-            #print('between_variance',len(between_variance))
-            #print('variables',len(variables))
             return variables[between_variance.index(max(between_variance))],splits[between_variance.index(max(between_variance))],between_variance[between_variance.index(max(between_variance))]
+      
+        return None
 
-
-
-    def growing_tree(self,node:Node,rout='start',prop=0.55,delta_check  = 0.1,node_proportion_partial_check = 0.9):
+    def growing_tree(self,node:Node,rout='start',prop=0.55,delta_check = 0.015,node_proportion_partial_check = 0.81):
         
         value_soglia_variance = []
 
