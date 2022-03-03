@@ -7,7 +7,7 @@ class Impurity:
         self.name = name
     def get_impurity(self,array:list,type):
         if self.type == "MSE":
-            return stat.variance(array)
+            return variance(array)
         elif self.type=='GINI':
             # (Warning: This is a concise implementation, but it is O(n**2)
             # in time and memory, where n = len(x).  *Don't* pass in huge
@@ -100,7 +100,7 @@ class CART:
     grow_rules = {}
     
 
-    def __init__(self,y,features,features_names,n_features,n_features_names,min_cases_parent = 10,min_cases_child = 5,min_imp_gain=10**-5):
+    def __init__(self,y,features,features_names,n_features,n_features_names,min_cases_parent = 10,min_cases_child = 5,min_imp_gain=10**-3):
 
         self.y = y
         self.features = features
@@ -111,7 +111,16 @@ class CART:
         self.grow_rules.update(dict({'min_cases_parent':min_cases_parent,'min_cases_child':min_cases_child,'min_imp_gain':min_imp_gain}))
 
 
-    def node_search_split(self,node:MyNodeClass, features, features_names):
+    def get_number_split(self):
+        return self.nsplit
+
+    def get_leaf(self):
+        leaf = [inode for inode in self.bigtree if inode not in self.father]
+        return leaf
+    
+    
+
+    def node_search_split(self,node:MyNodeClass,features,features_names):
         
         impurities_1=[]
         between_variance=[]
@@ -143,31 +152,15 @@ class CART:
                         #print(type(i))
                         #print('i:',i)    
                         stump = node.bin_split(self.features, self.n_features, str(var),i)
-                        if self.y[stump[0].indexes].size <= 1:
-                            #return None
-                            #print("##############sono qui nodo 0#######")
-                            impurities_1.append(0)
-                            impurities_1.append(impur(self.y[stump[1].indexes]))
-                            between_variance.append(sum(impurities_1[t:]))
-                            splits.append(i)
-                            variables.append(str(var))
-                            t+=2
-                        elif self.y[stump[1].indexes].size <= 1:
-                            #return None
-                            #print("##############sono qui nodo1#######")
-                            impurities_1.append(impur(self.y[stump[0].indexes]))
-                            impurities_1.append(0)
-                            between_variance.append(sum(impurities_1[t:]))
-                            splits.append(i)
-                            variables.append(str(var))
-                            t+=2
-                        elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
+                        if self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                             impurities_1.append(impur(self.y[stump[0].indexes]))
                             impurities_1.append(impur(self.y[stump[1].indexes]))
                             between_variance.append(sum(impurities_1[t:]))
                             splits.append(i)
                             variables.append(str(var))
                             t+=2
+                        else:
+                            continue
                 combinazioni=[]
                 distinct_values=np.array([])
                 distinct_values=list(np.append(distinct_values,np.unique(self.n_features[str(var)])))
@@ -179,29 +172,15 @@ class CART:
                     #print('qua2',distinct_values[i],type(distinct_values[i]))
                     stump = node.bin_split(self.features, self.n_features, str(var),distinct_values[i])
 
-                    if self.y[stump[0].indexes].size <= 1:
-                        #return None
-                        impurities_1.append(0)
-                        impurities_1.append(impur(self.y[stump[1].indexes]))
-                        between_variance.append(sum(impurities_1[t:]))
-                        splits.append(distinct_values[i])
-                        variables.append(str(var))
-                        t+=2
-                    elif self.y[stump[1].indexes].size <= 1:
-                        #return None
-                        impurities_1.append(impur(self.y[stump[0].indexes]))
-                        impurities_1.append(0)
-                        between_variance.append(sum(impurities_1[t:]))
-                        splits.append(distinct_values[i])
-                        variables.append(str(var))
-                        t+=2
-                    elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child']  and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
+                    if self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child']  and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                         impurities_1.append(impur(self.y[stump[0].indexes]))
                         impurities_1.append(impur(self.y[stump[1].indexes]))
                         between_variance.append(sum(impurities_1[t:]))
                         splits.append(distinct_values[i])
                         variables.append(str(var))
                         t+=2
+                    else:
+                        continue
                 
                             
             for var in self.features_names:
@@ -209,27 +188,15 @@ class CART:
                 for i in range(len(self.features[str(var)])):
 
                         stump = node.bin_split(self.features, self.n_features, str(var),self.features[str(var)][i])
-                        if self.y[stump[0].indexes].size <= 1:
-                            impurities_1.append(0)
-                            impurities_1.append(impur(self.y[stump[1].indexes]))
-                            between_variance.append(sum(impurities_1[t:]))
-                            splits.append(self.features[str(var)][i])
-                            variables.append(str(var))
-                            t+=2
-                        elif self.y[stump[1].indexes].size <= 1:
-                            impurities_1.append(impur(self.y[stump[0].indexes]))
-                            impurities_1.append(0)
-                            between_variance.append(sum(impurities_1[t:]))
-                            splits.append(self.features[str(var)][i])
-                            variables.append(str(var))
-                            t+=2
-                        elif self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
+                        if self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                             impurities_1.append(impur(self.y[stump[0].indexes]))
                             impurities_1.append(impur(self.y[stump[1].indexes]))
                             between_variance.append(sum(impurities_1[t:]))
                             splits.append(self.features[str(var)][i])
                             variables.append(str(var))
                             t+=2
+                        else: 
+                            continue
             
 
                         
@@ -237,7 +204,7 @@ class CART:
       
         return None
 
-    def growing_tree(self,node:Node,rout='start',prop=0.55,delta_check = 0.015,node_proportion_partial_check = 0.81):
+    def growing_tree(self,node:Node,rout='start',propotion_total=0.55,node_proportion_partial_check = 0.80):
         
         value_soglia_variance = []
 
@@ -292,13 +259,13 @@ class CART:
         
         if len(self.node_prop_list)>1:
             delta = self.node_prop_list[-1] - self.node_prop_list[-2]
-            print("delta ",delta)
-            if delta < delta_check or node_propotion_partial > node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
+            print("Node_proportionale_gain ",delta)
+            if delta < self.grow_rules['min_imp_gain'] or node_propotion_partial > node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
                 #completetree.tree.pop()
                 #completetree.root.pop()
                 return None
 
-        if node_propotion_total >= prop: 
+        if node_propotion_total >= propotion_total: 
             #completetree.tree.pop()
             #completetree.root.pop() 
             return None
