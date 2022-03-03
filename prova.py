@@ -51,10 +51,6 @@ n_features = dict(n_features, **n_features2)
 
 
 #############################################################################
-
-
-import itertools
-from statistics import mode
 '''
 print(features,'features',type(features))
 print()
@@ -109,6 +105,7 @@ my_tree = MyNodeClass('n1', indici, None)
 cart = CART(y,features,features_names,n_features,n_features_names) 
 
 cart.growing_tree(my_tree)
+cart.get_number_split()
 
 '''
 def myfun():
