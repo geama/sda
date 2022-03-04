@@ -41,6 +41,10 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
              self.children = children
     
 
+    def get_name_as_number(self):
+        return int(self.name[1:])
+    
+
     def get_name(self):
         return self.name
     
@@ -49,6 +53,10 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
     
     def set_features(self,features):
         self.features = features
+    
+    def get_parent(self):
+        return self.parent
+        
     
 
     # define binary split mechanics (for numerical variables)
@@ -88,7 +96,6 @@ def impur(vector):
 
 
 
-
 class CART:
     
     bigtree =  []
@@ -99,7 +106,6 @@ class CART:
     node_prop_list = []
     grow_rules = {}
     
-
     def __init__(self,y,features,features_names,n_features,n_features_names,min_cases_parent = 10,min_cases_child = 5,min_imp_gain=10**-3):
 
         self.y = y
@@ -113,12 +119,40 @@ class CART:
 
     def get_number_split(self):
         return self.nsplit
-
+    
     def get_leaf(self):
         leaf = [inode for inode in self.bigtree if inode not in self.father]
         return leaf
     
+
+    def get_father(self):
+        '''
+        return all the node father
+        '''
+        return self.father
+
+    def set_father(self,father_new:list):
+        '''
+        set a new father list after a pop()..
+        '''
+        self.father = father_new
     
+    def get_tree(self):
+        '''
+        return all the tree like a list as follow
+
+        [[node father,left child,right child],.....]
+
+        '''
+        return self.tree
+    
+    def get_RSS(self,node):
+        mean_y = mean(self.y[node.indexes])
+        return (1/len(node.indexes)*sum((self.y[node.indexes] - mean_y)**2))
+
+    def get_all_node(self):
+        return self.bigtree
+
 
     def node_search_split(self,node:MyNodeClass,features,features_names):
         
@@ -135,22 +169,18 @@ class CART:
         if len(node.indexes) >= self.grow_rules['min_cases_parent']:
             
             for var in self.n_features_names:
-                #print('categoric')
-                #for i in range(len(n_features[str(var)])):
+
                 distinct_values=np.array([])
                 distinct_values=np.append(distinct_values,np.unique(self.n_features[str(var)]))
-                #distinct_values.flatten
                 for i in range(1,len(distinct_values)):
                     combinazioni.append(list(itertools.combinations(np.unique(self.n_features[str(var)]), i)))
-                    #print(combinazioni,'combinazioni') 
                     
                         
                 combinazioni=combinazioni[1:]
-                #print(combinazioni)      
+                      
                 for index in combinazioni: 
                     for i in index:
-                        #print(type(i))
-                        #print('i:',i)    
+    
                         stump = node.bin_split(self.features, self.n_features, str(var),i)
                         if self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child'] and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
                             impurities_1.append(impur(self.y[stump[0].indexes]))
@@ -167,9 +197,6 @@ class CART:
         
                 for i in range(len(distinct_values)):
                 
-                    #distinct_values[i]=(distinct_values[i])
-                    #print('qua',distinct_values)
-                    #print('qua2',distinct_values[i],type(distinct_values[i]))
                     stump = node.bin_split(self.features, self.n_features, str(var),distinct_values[i])
 
                     if self.y[stump[0].indexes].size >= self.grow_rules['min_cases_child']  and self.y[stump[1].indexes].size >= self.grow_rules['min_cases_child']:
@@ -184,7 +211,6 @@ class CART:
                 
                             
             for var in self.features_names:
-                #print('numeric')
                 for i in range(len(self.features[str(var)])):
 
                         stump = node.bin_split(self.features, self.n_features, str(var),self.features[str(var)][i])
@@ -207,8 +233,7 @@ class CART:
     def growing_tree(self,node:Node,rout='start',propotion_total=0.55,node_proportion_partial_check = 0.80):
         
         value_soglia_variance = []
-
-        mini_tree= [] 
+        mini_tree = [] 
 
         try:
             
@@ -222,8 +247,6 @@ class CART:
         self.root.append((value_soglia_variance,rout))
 
         left_node,right_node = node.bin_split(self.features, self.n_features, str(value),soglia)
-
-
 
         mini_tree.append((node,left_node,right_node))
         self.tree.append(mini_tree) 
