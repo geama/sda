@@ -105,7 +105,13 @@ my_tree = MyNodeClass('n1', indici, None)
 cart = CART(y,features,features_names,n_features,n_features_names) 
 
 cart.growing_tree(my_tree)
-cart.get_number_split()
+print(cart.get_number_split())
+
+print(cart.get_father_RSS())
+print(cart.bigtree)
+print(len(cart.get_all_node()))
+
+
 
 '''
 def myfun():

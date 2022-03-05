@@ -130,12 +130,6 @@ class CART:
         return all the node father
         '''
         return self.father
-
-    def set_father(self,father_new:list):
-        '''
-        set a new father list after a pop()..
-        '''
-        self.father = father_new
     
     def get_tree(self):
         '''
@@ -151,7 +145,22 @@ class CART:
         return (1/len(node.indexes)*sum((self.y[node.indexes] - mean_y)**2))
 
     def get_all_node(self):
-        return self.bigtree
+        '''
+        Returns all the node of the tree 
+        please launch this after growing tree
+        else it returns a void list
+        '''
+        get = []
+        for i in self.bigtree:
+            if i not in get:
+                get.append(i)
+        return get
+
+    def get_father_RSS(self):
+        return [self.get_RSS(i) for i in self.get_father()]
+
+
+
 
 
     def node_search_split(self,node:MyNodeClass,features,features_names):
