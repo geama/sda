@@ -7,7 +7,7 @@ class Impurity:
         self.name = name
     def get_impurity(self,array:list,type):
         if self.type == "MSE":
-            return variance(array)
+            return stat.variance(array)
         elif self.type=='GINI':
             # (Warning: This is a concise implementation, but it is O(n**2)
             # in time and memory, where n = len(x).  *Don't* pass in huge
@@ -29,21 +29,30 @@ class MyBaseClass(object):  # Just a basic base class
     value = None            # it only brings the node value
 
 class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
-    def __init__(self, name, indexes, split=None, parent=None, children=None,node_level= 0):
+    def __init__(self, name, indexes, split=None, parent=None, children=None,node_level= 0,to_pop = False):
         super(MyNodeClass, self).__init__()
         self.name = name                   # id n_node number
         self.indexes = indexes             # array of indexes of cases
         #self.impurity = impurity          # vue in the node of the chosen impurity function
         self.split = split                 # string of the split (if any in the node, None => leaf)
         self.parent = parent               # parent node (if None => root node)
-        self.node_level = node_level
+        self.node_level = node_level       # Tiene traccia del livello dei nodi all'interno dell albero in ordine crescente : il root node avrà livello 0
+        self.to_pop = to_pop
         if children:
              self.children = children
     
 
     def get_name_as_number(self):
-        return int(self.name[1:])
+        '''
+        new name's node defination with integer
+        '''
+        return int(self.get_name()[1:])
     
+    def set_to_pop(self):
+        '''
+        Durante il growing tiene traccia dei nodi da potare.
+        '''
+        self.to_pop = True 
 
     def get_name(self):
         return self.name
@@ -55,6 +64,10 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
         self.features = features
     
     def get_parent(self):
+        '''
+        return the parent node 
+        if the the parent node is None , is the root.
+        '''
         return self.parent
         
     
@@ -90,7 +103,6 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
             treestr = u"%s%s" % (pre, node.name)
             print(treestr.ljust(8), node.split, node.indexes)
 
-
 def impur(vector):
     return (mean(vector)**2)*len(vector)
 
@@ -103,10 +115,14 @@ class CART:
     father = []
     root = []
     tree = []
+    father_to_pop = []
     node_prop_list = []
     grow_rules = {}
-    
-    def __init__(self,y,features,features_names,n_features,n_features_names,min_cases_parent = 10,min_cases_child = 5,min_imp_gain=10**-3):
+
+    def __init__(self,y,features,features_names,n_features \
+                    ,n_features_names,min_cases_parent = 10 \
+                    ,min_cases_child = 5\
+                    ,min_imp_gain=0.01):
 
         self.y = y
         self.features = features
@@ -121,16 +137,25 @@ class CART:
         return self.nsplit
     
     def get_leaf(self):
-        leaf = [inode for inode in self.bigtree if inode not in self.father]
-        return leaf
+        leaf = [inode for inode in self.bigtree if inode not in self.get_father()]
+        le = []
+        for i in leaf:
+            if i not in le:
+                le.append(i)
+        
+        return   [inode for inode in le if inode.to_pop == False]
+        
     
 
     def get_father(self):
         '''
         return all the node father
         '''
-        return self.father
-    
+        return [inode for inode in self.father if inode not in self.father_to_pop]
+
+    def get_root(self):
+        return self.root
+
     def get_tree(self):
         '''
         return all the tree like a list as follow
@@ -140,30 +165,25 @@ class CART:
         '''
         return self.tree
     
-    def get_RSS(self,node):
+    def _get_RSS(self,node):
+        '''
+        return the RSS of a node
+
+        this funcion is for only internal uses (private_funcion)
+        '''
         mean_y = mean(self.y[node.indexes])
         return (1/len(node.indexes)*sum((self.y[node.indexes] - mean_y)**2))
 
     def get_all_node(self):
-        '''
-        Returns all the node of the tree 
-        please launch this after growing tree
-        else it returns a void list
-        '''
-        get = []
-        for i in self.bigtree:
-            if i not in get:
-                get.append(i)
-        return get
-
-    def get_father_RSS(self):
-        return [self.get_RSS(i) for i in self.get_father()]
-
-
-
+        foglie = [nodi for nodi in self.get_leaf()]
+        return foglie + self.get_father()
 
 
     def node_search_split(self,node:MyNodeClass,features,features_names):
+
+        '''
+        The function return the best split thath the node may compute.
+        '''
         
         impurities_1=[]
         between_variance=[]
@@ -200,6 +220,7 @@ class CART:
                             t+=2
                         else:
                             continue
+                        
                 combinazioni=[]
                 distinct_values=np.array([])
                 distinct_values=list(np.append(distinct_values,np.unique(self.n_features[str(var)])))
@@ -239,7 +260,7 @@ class CART:
       
         return None
 
-    def growing_tree(self,node:Node,rout='start',propotion_total=0.55,node_proportion_partial_check = 0.80):
+    def growing_tree(self,node:Node,rout='start',propotion_total=0.8,node_proportion_partial_check = 0.99):
         
         value_soglia_variance = []
         mini_tree = [] 
@@ -261,10 +282,10 @@ class CART:
         self.tree.append(mini_tree) 
         self.bigtree.append(node)
         if rout != 'start':
-            self.father.append(node)
-        self.bigtree.append(node)
-        self.bigtree.append(left_node)
-        self.bigtree.append(right_node)
+            self.father.append(node) #append in 
+        self.bigtree.append(node)#append nodo padre
+        self.bigtree.append(left_node)#append nodo figlio sinistro
+        self.bigtree.append(right_node)#append nodo figlio desto
         print(value_soglia_variance,rout)
 
     ###### Calcolo della deviance nel nodo  
@@ -292,17 +313,70 @@ class CART:
         if len(self.node_prop_list)>1:
             delta = self.node_prop_list[-1] - self.node_prop_list[-2]
             print("Node_proportionale_gain ",delta)
-            if delta < self.grow_rules['min_imp_gain'] or node_propotion_partial > node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
-                #completetree.tree.pop()
-                #completetree.root.pop()
+            if delta < self.grow_rules['min_imp_gain'] or node_propotion_partial >= node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
+                print("ciao IL DELTA è IL PROBLEMA")
+                left_node.set_to_pop()
+                right_node.set_to_pop()
+                self.father_to_pop.append(node)
+                self.root.pop()
+
                 return None
 
         if node_propotion_total >= propotion_total: 
-            #completetree.tree.pop()
-            #completetree.root.pop() 
+
             return None
 
 
         self.nsplit += 1
         return self.growing_tree(left_node,"left"),self.growing_tree(right_node,"right")
+
+
+    def condition_to_stop(self,children):
+        count = 0
+        for i in children:
+            if i.get_parent()==None:
+                pass
+                
+        return False
+        
+        
+    def pop_list(self,lista,list_pop):
+        
+        for i in list_pop:
+            lista.pop(lista.index(i))
+        return lista
+
+    def pruning(self):
+        '''
+        call this function after the growing tree
+
+        perform the pruning of the tree based on the alpha value
+
+        Alfa = #########
+
+        '''
+        new_leaf = self.get_leaf().copy()
+        new_father = self.get_father().copy()
+        father_children = dict()
+        all_tree = []
+        children = []
+        n = 0
+         
+        for i in range(len(new_father)):
+            children = []
+            for j in range(len(new_leaf)):
+                if new_leaf[j].get_parent() is new_father[i]:
+                    children.append(new_leaf[j])
+            if len(children) != 0:
+                father_children.update({new_father[i]:children})
+                
+        all_tree.append(father_children)  
+
+        print(all_tree)   
+        return all_tree                 
+        
+            
+                
+        
+        
 
