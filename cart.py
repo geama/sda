@@ -1,4 +1,6 @@
+from hashlib import new
 import itertools
+from queue import Empty
 import numpy as np # use numpy arraysfrom
 from  statistics import mean,variance,mode
 from anytree import Node, RenderTree, NodeMixin
@@ -7,7 +9,7 @@ class Impurity:
         self.name = name
     def get_impurity(self,array:list,type):
         if self.type == "MSE":
-            return stat.variance(array)
+            return variance(array)
         elif self.type=='GINI':
             # (Warning: This is a concise implementation, but it is O(n**2)
             # in time and memory, where n = len(x).  *Don't* pass in huge
@@ -37,7 +39,7 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
         self.split = split                 # string of the split (if any in the node, None => leaf)
         self.parent = parent               # parent node (if None => root node)
         self.node_level = node_level       # Tiene traccia del livello dei nodi all'interno dell albero in ordine crescente : il root node avrà livello 0
-        self.to_pop = to_pop
+        self.to_pop = to_pop               #Tiene traccia dello stato del nodo 
         if children:
              self.children = children
     
@@ -103,6 +105,7 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
             treestr = u"%s%s" % (pre, node.name)
             print(treestr.ljust(8), node.split, node.indexes)
 
+
 def impur(vector):
     return (mean(vector)**2)*len(vector)
 
@@ -130,7 +133,9 @@ class CART:
         self.n_features = n_features
         self.n_features_names = n_features_names
         self.devian_y = len(self.y)*variance(self.y)
-        self.grow_rules.update(dict({'min_cases_parent':min_cases_parent,'min_cases_child':min_cases_child,'min_imp_gain':min_imp_gain}))
+        self.grow_rules.update(dict({'min_cases_parent':min_cases_parent \
+                                    ,'min_cases_child':min_cases_child \
+                                    ,'min_imp_gain':min_imp_gain}))
 
 
     def get_number_split(self):
@@ -319,11 +324,14 @@ class CART:
                 right_node.set_to_pop()
                 self.father_to_pop.append(node)
                 self.root.pop()
-
+                self.tree.pop()
+                #self.bigtree.pop()
+                #self.bigtree.pop()
                 return None
 
         if node_propotion_total >= propotion_total: 
-
+            #completetree.tree.pop()
+            #completetree.root.pop() 
             return None
 
 
@@ -331,12 +339,17 @@ class CART:
         return self.growing_tree(left_node,"left"),self.growing_tree(right_node,"right")
 
 
-    def condition_to_stop(self,children):
+
+
+    def condition_to_stop(self,father):
         count = 0
-        for i in children:
-            if i.get_parent()==None:
-                pass
-                
+        for i in father:
+            if i == None:
+                count += 1
+        if len(father) == count:
+            return True
+
+               
         return False
         
         
@@ -345,38 +358,43 @@ class CART:
         for i in list_pop:
             lista.pop(lista.index(i))
         return lista
+    
+    
 
     def pruning(self):
         '''
         call this function after the growing tree
-
         perform the pruning of the tree based on the alpha value
-
         Alfa = #########
-
         '''
         new_leaf = self.get_leaf().copy()
-        new_father = self.get_father().copy()
-        father_children = dict()
+        new_father = [i.get_parent() for i in new_leaf] #prendo solo 
+        father_children = []
         all_tree = []
         children = []
         n = 0
-         
-        for i in range(len(new_father)):
-            children = []
-            for j in range(len(new_leaf)):
-                if new_leaf[j].get_parent() is new_father[i]:
-                    children.append(new_leaf[j])
-            if len(children) != 0:
-                father_children.update({new_father[i]:children})
-                
-        all_tree.append(father_children)  
+
+        while(self.condition_to_stop(new_father)!=True):
+
+            for i in range(len(new_father)):
+                children = []
+                for j in range(len(new_leaf)):
+                    if new_leaf[j] == None: #control if a node in leaf is none
+                        continue
+                    if new_leaf[j].get_parent() is new_father[i]: #check the parent and the father
+                        children.append(new_leaf[j])
+
+                if len(children) != 0 :
+                    father_children.append([new_father[i],children,len(children)])
+                    
+            new_leaf = new_father.copy() #devo ottenere LA COPIA non il riferimento!
+            new_father = [i.get_parent() for i in new_father if i != None]
+        
+
+            all_tree.append(father_children)  
 
         print(all_tree)   
         return all_tree                 
-        
-            
                 
         
         
-
