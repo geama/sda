@@ -1,5 +1,6 @@
 from cart import *
 
+
 import pandas as pd
 
 #d = dict(features, **n_features)  #merges the two dicts
@@ -113,6 +114,8 @@ cart.growing_tree(my_tree)
 print(len(cart.get_leaf()))
 cart.pruning()
 
+cart.process()
+
 
 '''
 def myfun():
@@ -120,4 +123,106 @@ def myfun():
 
 import dis
 dis.dis(myfun)
+'''
+'''
+albero=[] 
+condition=True
+a=1
+leaves = cart.get_leaf()
+while condition: 
+    
+    if a==1:
+        print('vai')
+        parents_leaves=[] 
+        for i in leaves:
+            parents_leaves.append(i.get_parent())
+        j=[]
+        foglie=[] 
+        leaves2=[]
+        leaves3=[]
+        #getting unique values:
+        r=0
+        for i in parents_leaves:
+            if i not in j:
+                j.append(i) # gli 1
+                leaves2.append(leaves[r])
+            else:
+                foglie.append(i) # i 2 
+                leaves3.append(leaves[r])
+            r+=1
+
+        v=0   
+        genitori_foglie=[]  
+        terminali=[]  
+        for item in j:
+            t=0 
+            for i in foglie:
+                if i==item:
+                    genitori_foglie.append([item,2])
+                    terminali.append([leaves3[t],leaves2[v]])
+                    break 
+                if item not in foglie:
+                    genitori_foglie.append([item,1])
+                    terminali.append([leaves2[v]])
+                    break
+                t+=1
+            v+=1
+        x=genitori_foglie
+        y=terminali
+        albero.append((x,y))
+    a=0
+    children=genitori_foglie
+    #print(x)
+    #print()
+    parents_leaves=[]
+    for i in children:
+        if i[0]!=None: 
+            parents_leaves.append(i[0].get_parent())
+        else:
+            parents_leaves.append(None)
+    j=[]
+    foglie=[] 
+    leaves2=[]
+    leaves3=[]
+    #getting unique values:
+    r=0
+    for i in parents_leaves:
+        if i not in j:
+            j.append(i) # gli 1
+            leaves2.append(terminali[r])
+        else:
+            foglie.append(i) # i 2 
+            leaves3.append(terminali[r])
+        r+=1
+
+    v=0   
+    genitori_foglie=[]  
+    terminali=[] 
+    if len(foglie)>=1:
+        for item in j:
+            t=0
+            for i in foglie:
+                if i==item:
+                    genitori_foglie.append([item,2])
+                    terminali.append([leaves3[t],leaves2[v]])
+                    break 
+                if item not in foglie:
+                    genitori_foglie.append([item,1])
+                    terminali.append([leaves2[v]])
+                    break
+                t+=1
+            v+=1
+        x=genitori_foglie
+        y=terminali
+    else:
+        x=parents_leaves
+        terminali=leaves2
+        y=leaves2 
+        for i in range(len(parents_leaves)):
+            print('no doppioni')
+            genitori_foglie.append([parents_leaves[i],1])
+    albero.append((x,y))
+
+    if len(x) == 1:
+        condition=False
 '''

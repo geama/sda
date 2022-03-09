@@ -1,4 +1,4 @@
-from hashlib import new
+from hashlib import new 
 import itertools
 from queue import Empty
 import numpy as np # use numpy arraysfrom
@@ -38,7 +38,7 @@ class MyNodeClass(MyBaseClass, NodeMixin):  # Add Node feature
         #self.impurity = impurity          # vue in the node of the chosen impurity function
         self.split = split                 # string of the split (if any in the node, None => leaf)
         self.parent = parent               # parent node (if None => root node)
-        self.node_level = node_level       # Tiene traccia del livello dei nodi all'interno dell albero in ordine crescente : il root node avrà livello 0
+        self.node_level = node_level       # Tiene traccia del livello dei nodi all'interno dell albero in ordine crescente : il root node avr� livello 0
         self.to_pop = to_pop               #Tiene traccia dello stato del nodo 
         if children:
              self.children = children
@@ -319,7 +319,7 @@ class CART:
             delta = self.node_prop_list[-1] - self.node_prop_list[-2]
             print("Node_proportionale_gain ",delta)
             if delta < self.grow_rules['min_imp_gain'] or node_propotion_partial >= node_proportion_partial_check:#all utente  :Controllo delle variazione nei nodi figli
-                print("ciao IL DELTA è IL PROBLEMA")
+                #print("ciao IL DELTA � IL PROBLEMA")
                 left_node.set_to_pop()
                 right_node.set_to_pop()
                 self.father_to_pop.append(node)
@@ -393,8 +393,74 @@ class CART:
 
             all_tree.append(father_children)  
 
-        print(all_tree)   
+        #print(all_tree)   
         return all_tree                 
                 
+    def get_key(self, my_dict, val):
+        for key, value in my_dict.items():
+            if val == value:
+                return key
+    
+        return "key doesn't exist"
+
+    def identify_downward_relatives(self, father,leaves):
+        father_dict = {}
+        relative_dict={}
+        father_list =[]
+
+        for node in father:
+            father_dict[node] = int(node.name[1:])
+            father_list.append(int(node.name[1:]))
+        for node in father:   #changing from [1:] to all
+            level = int(node.node_level)
+            #print(level)
+            if (int(node.name[1:]) *2) in father_list:
+                if node.name in relative_dict:
+                    relative_dict[node].append(int((node.name[1:]))*2)
+                else:
+                    relative_dict[node] = [int(node.name[1:])*2]
+            if (int(node.name[1:])*2+1) in father_list:
+                if node in relative_dict:           
+                    relative_dict[node].append(int((node.name[1:]))*2+1)
+                else:
+                    relative_dict[node] = [int(node.name[1:])*2+1]      
+            while level > -1 and node in relative_dict:
+                level += -1
+                for child in relative_dict[node]:
+                                
+                    if child*2 in father_list and child*2 not in relative_dict[node]:
+                        if node in relative_dict:
+                            relative_dict[node].append(int(child)*2)
+                        else:
+                            relative_dict[node] = [int(node.name[1:])*2]                        
+                    if child*2+1 in father_list and child*2+1 not in relative_dict[node]:
+                        if node in relative_dict:
+                            relative_dict[node].append(int(child)*2+1)                  
+                        else:
+                            relative_dict[node].append(int((node.name[1:]))*2+1)
+                
+        return(relative_dict)        
+    
+    def only_leaves_dict(self, relative_dict, leaves, all_nodes):
+        all_nodes_dict ={}
+        only_leaves_dictionary ={}
+
+        for node in all_nodes:
+            all_nodes_dict[node] = int(node.name[1:])    
         
+        for element in relative_dict:
+            for child in relative_dict[element]:
+                if self.get_key(all_nodes_dict, child) in leaves:
+                    if element in only_leaves_dictionary:
+                        only_leaves_dictionary[element].append(child)
+                    else:
+                        only_leaves_dictionary[element] =[child]
+
+        return only_leaves_dictionary
+
+    def process(self):
+        relative_dict = self.identify_downward_relatives(self.get_all_node(), self.get_leaf())
+        print("relativedict", relative_dict)
+        only_leaves = self.only_leaves_dict(relative_dict, self.get_leaf(), self.get_all_node())
+        print("only_leaves", only_leaves)
         
